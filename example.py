@@ -8,8 +8,8 @@ from picnic import *
 MSG_LEN = 500
 
 def picnicExample(parameters):
-    pk = PicnicPublicKey(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE))
-    sk = PicnicPrivateKey(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), pk)
+    pk = picnic_publickey_t(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE))
+    sk = picnic_privatekey_t(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), pk)
 
     print(f"Picnic example with parameter set: {picnic_get_param_name(parameters)}")
 
@@ -64,7 +64,7 @@ def picnicExample(parameters):
         print("Failed to serialize public key")
         exit(-1)
 
-    pk = PicnicPublicKey(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE))
+    pk = picnic_publickey_t(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE))
 
     ret = picnic_read_public_key(pk, pk_buf)
     if ret != 0:
@@ -84,7 +84,7 @@ def picnicExample(parameters):
         print("Failed to write private key")
         exit(-1)
 
-    sk = PicnicPrivateKey(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), pk)
+    sk = picnic_privatekey_t(parameters, bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE), pk)
     ret = picnic_read_private_key(sk, sk_buf)
     if ret != 0:
         print("Failed to read private key")
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         picnicExample(int(sys.argv[1]))
     else:
-        for params in range(1, PicnicParams.PARAMETER_SET_MAX_INDEX):
+        for params in range(1, picnic_params_t.PARAMETER_SET_MAX_INDEX):
             picnicExample(params)
 
     

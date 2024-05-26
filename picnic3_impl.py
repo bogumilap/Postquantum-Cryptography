@@ -10,8 +10,8 @@ from constants.lowmc_constants_L5 import *
 
 import tree
 
-EXIT_SUCCESS = 1
-EXIT_FAILURE = 0
+EXIT_SUCCESS = 0
+EXIT_FAILURE = 1
 
 class proof2_t:
     def __init__(self, seedInfo, seedInfoLen, aux, C, input, msgs):

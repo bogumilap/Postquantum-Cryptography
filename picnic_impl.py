@@ -10,8 +10,8 @@ from picnic_types import view_t, commitments_t, g_commitments_t, seeds_t, random
 
 
 class transform_t(Enum):
-    TRANSFORM_FS = 0
-    TRANSFORM_UR = 1
+    TRANSFORM_FS = 0,
+    TRANSFORM_UR = 1,
     TRANSFORM_INVALID = 255
 
 
