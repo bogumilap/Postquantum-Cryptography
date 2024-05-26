@@ -1,5 +1,6 @@
 import sys
 from hashlib import shake_128, shake_256
+import hashlib
 from typing import List
 
 from picnic_impl import paramset_t
@@ -14,6 +15,11 @@ HASH_PREFIX_2 = 2
 HASH_PREFIX_3 = 3
 HASH_PREFIX_4 = 4
 HASH_PREFIX_5 = 5
+
+class HashInstance:
+    def __init__(self):
+        self.ctx = hashlib.sha256()
+
 
 
 def HashUpdate(ctx, data: List[int] | int, byteLen: int) -> None:

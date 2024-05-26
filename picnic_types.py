@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import List
 
-from picnic_impl import paramset_t, numBytes, transform_t
+# from picnic_impl import paramset_t, numBytes, transform_t, proof_t, signature_t
+from picnic_impl import *
+from picnic3_impl import *
 
 
 @dataclass
@@ -33,6 +35,9 @@ class msgs_t:
     pos: int
     unopened: int  # Index of the unopened party, or -1 if all parties opened (when signing)
 
+@dataclass
+class inputs_t:
+    pass
 
 @dataclass
 class g_commitments_t:
@@ -54,6 +59,11 @@ class shares_t:
 def allocateShares(count: int) -> shares_t:
     shares = shares_t([0 for _ in range(count)], count)
     return shares
+
+def freeShares(shares):
+    del shares.shares
+    del shares
+
 
 
 # Allocate functions for dynamically sized types
@@ -228,7 +238,7 @@ def allocateViews(params: paramset_t) -> List[List[view_t]]:
     return views
 
 
-def allocateGCommitments(params: paramset_t) -> List[g_commitments]:
+def allocateGCommitments(params: paramset_t) -> List[g_commitments_t]:
     gs = None
 
     if params.transform == transform_t.TRANSFORM_UR:
@@ -240,3 +250,85 @@ def allocateGCommitments(params: paramset_t) -> List[g_commitments]:
                 gs[i].G.append(slab[slab_start_index:])
                 slab_start_index += params.UnruhGWithInputBytes
     return gs
+
+
+# functions to free memory
+
+def freeView(view):
+    del view.inputShare
+    del view.communicatedBits
+    del view.outputShare
+
+def freeRandomTape(tape):
+    if tape is not None:
+        del tape.tape[0]
+        del tape.tape
+
+def freeProof2(proof):
+    del proof.seedInfo
+    del proof.C
+    del proof.input
+    del proof.aux
+    del proof.msgs
+
+def freeProof(proof):
+    del proof.seed1
+    del proof.seed2
+    del proof.inputShare
+    del proof.communicatedBits
+    del proof.view3Commitment
+    del proof.view3UnruhG
+
+def freeSignature(sig, params):
+    for i in range(params.numMPCRounds):
+        freeProof(sig.proofs[i])
+
+    del sig.proofs
+    del sig.challengeBits
+    del sig.salt
+
+def freeSignature2(sig, params):
+    del sig.salt
+    del sig.iSeedInfo
+    del sig.cvInfo
+    del sig.challengeC
+    del sig.challengeP
+    del sig.challengeHash
+    for i in range(params.numMPCRounds):
+        freeProof2(sig.proofs[i])
+    del sig.proofs
+
+def freeSeeds(seeds):
+    del seeds[0].seed[0]  # Frees slab1
+    del seeds[0].iSeed    # Frees slab3
+    del seeds[0].seed     # frees slab2
+    del seeds
+
+def freeCommitments(commitments):
+    del commitments[0].hashes
+    del commitments
+
+def freeCommitments2(commitments):
+    if commitments is not None:
+        if commitments.hashes is not None:
+            del commitments.hashes
+
+def freeInputs(inputs):
+    del inputs
+
+def freeMsgs(msgs):
+    del msgs[0].msgs
+    del msgs
+
+def freeViews(views, params):
+    for i in range(params.numMPCRounds):
+        for j in range(3):
+            freeView(views[i][j])
+        del views[i]
+
+    del views
+
+def freeGCommitments(gs):
+    if gs is not None:
+        del gs[0].G[0]
+        del gs
