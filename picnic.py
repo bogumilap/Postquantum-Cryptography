@@ -1,10 +1,14 @@
 from picnic_impl import *
 from picnic3_impl import *
 from picnic_types import *
-from constants.lowmc_constants import *
-from constants.lowmc_constants_L1 import *
-from constants.lowmc_constants_L3 import *
-from constants.lowmc_constants_L5 import *
+import picnic_types
+import constants.lowmc_constants as constants
+# from constants.lowmc_constants_L1 import *
+# from constants.lowmc_constants_L3 import *
+# from constants.lowmc_constants_L5 import *
+from classes import *
+from picnic_random import random_bytes_default
+
 
 
 import sys
@@ -17,15 +21,15 @@ PICNIC_MAX_PRIVATEKEY_SIZE = 3 * PICNIC_MAX_LOWMC_BLOCK_SIZE + 2
 PICNIC_MAX_SIGNATURE_SIZE = 209522
 
 
-def random_bytes_default(buf, len):
-    """
-    Funkcja do generowania losowych bajtów za pomocą BCryptGenRandom w systemie Windows.
-    """
-    if os.name == 'nt':
-        import bcrypt
-        buf[:len] = bcrypt.gensalt(len)
-    else:
-        raise NotImplementedError("Nieobsługiwany system operacyjny.")
+# def random_bytes_default(buf, len):
+#     """
+#     Funkcja do generowania losowych bajtów za pomocą BCryptGenRandom w systemie Windows.
+#     """
+#     if os.name == 'nt':
+#         import bcrypt
+#         buf[:len] = bcrypt.gensalt(len)
+#     else:
+#         raise NotImplementedError("Nieobsługiwany system operacyjny.")
     
     
 
@@ -38,63 +42,45 @@ def random_bytes_supercop(buf, len):
     """
     pass
 
-if SUPERCOP:
-    picnic_random_bytes = random_bytes_supercop
-else:
-    PICNIC_BUILD_DEFAULT_RNG = 1  # Przypisanie wartości domyślnej, jeśli SUPERCOP nie jest dostępny
-    picnic_random_bytes = random_bytes_default
+# if SUPERCOP:
+#     picnic_random_bytes = random_bytes_supercop
+# else:
+PICNIC_BUILD_DEFAULT_RNG = 1  # Przypisanie wartości domyślnej, jeśli SUPERCOP nie jest dostępny
+picnic_random_bytes = random_bytes_default
 
 
 class picnic_params_t(Enum):
-    PARAMETER_SET_INVALID = 0,
-    Picnic_L1_FS = 1,
-    Picnic_L1_UR = 2,
-    Picnic_L3_FS = 3,
-    Picnic_L3_UR = 4,
-    Picnic_L5_FS = 5,
-    Picnic_L5_UR = 6,
-    Picnic3_L1 = 7,
-    Picnic3_L3 = 8,
-    Picnic3_L5 = 9,
-    Picnic_L1_full = 10,
-    Picnic_L3_full = 11,
-    Picnic_L5_full = 12,
+    PARAMETER_SET_INVALID = 0
+    Picnic_L1_FS = 1
+    Picnic_L1_UR = 2
+    Picnic_L3_FS = 3
+    Picnic_L3_UR = 4
+    Picnic_L5_FS = 5
+    Picnic_L5_UR = 6
+    Picnic3_L1 = 7
+    Picnic3_L3 = 8
+    Picnic3_L5 = 9
+    Picnic_L1_full = 10
+    Picnic_L3_full = 11
+    Picnic_L5_full = 12
     PARAMETER_SET_MAX_INDEX = 13
 
-# PARAMETER_SET_INVALID = 0
-# Picnic_L1_FS = 1
-# Picnic_L1_UR = 2
-# Picnic_L3_FS = 3
-# Picnic_L3_UR = 4
-# Picnic_L5_FS = 5
-# Picnic_L5_UR = 6
-# Picnic3_L1 = 7
-# Picnic3_L3 = 8
-# Picnic3_L5 = 9
-# Picnic_L1_full = 10
-# Picnic_L3_full = 11
-# Picnic_L5_full = 12
-# PARAMETER_SET_MAX_INDEX = 13
-
-# TRANSFORM_FS = 0
-# TRANSFORM_UR = 1
-# TRANSFORM_INVALID = 255
 
 
 class picnic_publickey_t:
-    def __init__(self):
-        self.params = picnic_params_t.PARAMETER_SET_INVALID
-        self.plaintext = bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE)
-        self.ciphertext = bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE)
+    def __init__(self, params=picnic_params_t.PARAMETER_SET_INVALID.value, plaintext=bytearray(PICNIC_MAX_PUBLICKEY_SIZE), ciphertext=bytearray(PICNIC_MAX_PUBLICKEY_SIZE)):
+        self.params = params
+        self.plaintext = plaintext
+        self.ciphertext = ciphertext
 
 class picnic_privatekey_t:
-    def __init__(self):
-        self.params = picnic_params_t.PARAMETER_SET_INVALID
-        self.data = bytearray(PICNIC_MAX_LOWMC_BLOCK_SIZE)
-        self.pk = picnic_publickey_t()
+    def __init__(self, params=picnic_params_t.PARAMETER_SET_INVALID.value, data=bytearray(PICNIC_MAX_PRIVATEKEY_SIZE), pk=None):
+        self.params = params
+        self.data = data
+        self.pk = pk if pk is not None else picnic_publickey_t()
 
 def is_valid_params(params):
-    if params > 0 and params < picnic_params_t.PARAMETER_SET_MAX_INDEX:
+    if params > 0 and params < picnic_params_t.PARAMETER_SET_MAX_INDEX.value:
         return 1
     print("INVALID PARAMS\n")
     return 0
@@ -118,18 +104,18 @@ def get_transform(parameters):
 
 def picnic_get_param_name(parameters):
     switcher = {
-        picnic_params_t.Picnic_L1_FS: "Picnic_L1_FS",
-        picnic_params_t.Picnic_L1_UR: "Picnic_L1_UR",
-        picnic_params_t.Picnic_L3_FS: "Picnic_L3_FS",
-        picnic_params_t.Picnic_L3_UR: "Picnic_L3_UR",
-        picnic_params_t.Picnic_L5_FS: "Picnic_L5_FS",
-        picnic_params_t.Picnic_L5_UR: "Picnic_L5_UR",
-        picnic_params_t.Picnic3_L1: "Picnic3_L1",
-        picnic_params_t.Picnic3_L3: "Picnic3_L3",
-        picnic_params_t.Picnic3_L5: "Picnic3_L5",
-        picnic_params_t.Picnic_L1_full: "Picnic_L1_full",
-        picnic_params_t.Picnic_L3_full: "Picnic_L3_full",
-        picnic_params_t.Picnic_L5_full: "Picnic_L5_full",
+        picnic_params_t.Picnic_L1_FS.value: "Picnic_L1_FS",
+        picnic_params_t.Picnic_L1_UR.value: "Picnic_L1_UR",
+        picnic_params_t.Picnic_L3_FS.value: "Picnic_L3_FS",
+        picnic_params_t.Picnic_L3_UR.value: "Picnic_L3_UR",
+        picnic_params_t.Picnic_L5_FS.value: "Picnic_L5_FS",
+        picnic_params_t.Picnic_L5_UR.value: "Picnic_L5_UR",
+        picnic_params_t.Picnic3_L1.value: "Picnic3_L1",
+        picnic_params_t.Picnic3_L3.value: "Picnic3_L3",
+        picnic_params_t.Picnic3_L5.value: "Picnic3_L5",
+        picnic_params_t.Picnic_L1_full.value: "Picnic_L1_full",
+        picnic_params_t.Picnic_L3_full.value: "Picnic_L3_full",
+        picnic_params_t.Picnic_L5_full.value: "Picnic_L5_full",
     }
     return switcher.get(parameters, "Unknown parameter set")
 
@@ -157,7 +143,7 @@ def get_param_set(picnicParams, paramset):
     paramsetSize = sys.getsizeof(paramset)
 
 
-    if picnicParams in [picnic_params_t.Picnic_L1_FS, picnic_params_t.Picnic_L1_UR]:
+    if picnicParams in [picnic_params_t.Picnic_L1_FS.value, picnic_params_t.Picnic_L1_UR.value]:
         pqSecurityLevel = 64
         paramset.stateSizeBits = 128
         paramset.numMPCRounds = 219
@@ -165,7 +151,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 10
         paramset.numRounds = 20
         paramset.digestSizeBytes = 32
-    elif picnicParams in [picnic_params_t.Picnic_L3_FS, picnic_params_t.Picnic_L3_UR]:
+    elif picnicParams in [picnic_params_t.Picnic_L3_FS.value, picnic_params_t.Picnic_L3_UR.value]:
         pqSecurityLevel = 96
         paramset.stateSizeBits = 192
         paramset.numMPCRounds = 329
@@ -173,7 +159,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 10
         paramset.numRounds = 30
         paramset.digestSizeBytes = 48
-    elif picnicParams in [picnic_params_t.Picnic_L5_FS, picnic_params_t.Picnic_L5_UR]:
+    elif picnicParams in [picnic_params_t.Picnic_L5_FS.value, picnic_params_t.Picnic_L5_UR.value]:
         pqSecurityLevel = 128
         paramset.stateSizeBits = 256
         paramset.numMPCRounds = 438
@@ -181,7 +167,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 10
         paramset.numRounds = 38
         paramset.digestSizeBytes = 64
-    elif picnicParams == picnic_params_t.Picnic3_L1:
+    elif picnicParams == picnic_params_t.Picnic3_L1.value:
         pqSecurityLevel = 64
         paramset.stateSizeBits = 129
         paramset.numMPCRounds = 250
@@ -190,7 +176,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 43
         paramset.numRounds = 4
         paramset.digestSizeBytes = 32
-    elif picnicParams == picnic_params_t.Picnic3_L3:
+    elif picnicParams == picnic_params_t.Picnic3_L3.value:
         pqSecurityLevel = 96
         paramset.stateSizeBits = 192
         paramset.numMPCRounds = 419
@@ -199,7 +185,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 64
         paramset.numRounds = 4
         paramset.digestSizeBytes = 48
-    elif picnicParams == picnic_params_t.Picnic3_L5:
+    elif picnicParams == picnic_params_t.Picnic3_L5.value:
         pqSecurityLevel = 128
         paramset.stateSizeBits = 255
         paramset.numMPCRounds = 601
@@ -208,7 +194,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 85
         paramset.numRounds = 4
         paramset.digestSizeBytes = 64
-    elif picnicParams == picnic_params_t.Picnic_L1_full:
+    elif picnicParams == picnic_params_t.Picnic_L1_full.value:
         pqSecurityLevel = 64
         paramset.stateSizeBits = 129
         paramset.numMPCRounds = 219
@@ -216,7 +202,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 43
         paramset.numRounds = 4
         paramset.digestSizeBytes = 32
-    elif picnicParams == picnic_params_t.Picnic_L3_full:
+    elif picnicParams == picnic_params_t.Picnic_L3_full.value:
         pqSecurityLevel = 96
         paramset.stateSizeBits = 192
         paramset.numMPCRounds = 329
@@ -224,7 +210,7 @@ def get_param_set(picnicParams, paramset):
         paramset.numSboxes = 64
         paramset.numRounds = 4
         paramset.digestSizeBytes = 48
-    elif picnicParams == picnic_params_t.Picnic_L5_full:
+    elif picnicParams == picnic_params_t.Picnic_L5_full.value:
         pqSecurityLevel = 128
         paramset.stateSizeBits = 255
         paramset.numMPCRounds = 438
@@ -233,17 +219,17 @@ def get_param_set(picnicParams, paramset):
         paramset.numRounds = 4
         paramset.digestSizeBytes = 64
     else:
-        print(("Unsupported Picnic parameter set (%d). \n" % picnicParams))
+        print(f"Unsupported Picnic parameter set {picnicParams}")
         return -1
 
     paramset.andSizeBytes = numBytes(paramset.numSboxes * 3 * paramset.numRounds)
     paramset.stateSizeBytes = numBytes(paramset.stateSizeBits)
     paramset.seedSizeBytes = numBytes(2 * pqSecurityLevel)
-    paramset.stateSizeWords = (paramset.stateSizeBits + WORD_SIZE_BITS - 1) // WORD_SIZE_BITS
+    paramset.stateSizeWords = (paramset.stateSizeBits + constants.WORD_SIZE_BITS - 1) // constants.WORD_SIZE_BITS
     paramset.transform = get_transform(picnicParams)
     paramset.saltSizeBytes = 32  # same for all parameter sets
 
-    if paramset.transform == transform_t.TRANSFORM_UR:
+    if paramset.transform == transform_t.TRANSFORM_UR.value:
         paramset.UnruhGWithoutInputBytes = paramset.seedSizeBytes + paramset.andSizeBytes
         paramset.UnruhGWithInputBytes = paramset.UnruhGWithoutInputBytes + paramset.stateSizeBytes
 
@@ -299,7 +285,7 @@ def picnic_keygen(parameters, pk, sk):
     return 0
 
 def is_picnic3(params):
-    return params in [picnic_params_t.Picnic3_L1, picnic_params_t.Picnic3_L3, picnic_params_t.Picnic3_L5]
+    return params in [picnic_params_t.Picnic3_L1.value, picnic_params_t.Picnic3_L3.value, picnic_params_t.Picnic3_L5.value]
 
 
 def picnic_sign(sk, message, message_len, signature, signature_len):
@@ -356,7 +342,7 @@ def picnic_signature_size(parameters):
     if ret != EXIT_SUCCESS:
         return PICNIC_MAX_SIGNATURE_SIZE
     
-    if parameters == picnic_params_t.Picnic3_L1 or parameters == picnic_params_t.Picnic3_L3 or parameters == picnic_params_t.Picnic3_L5:
+    if parameters == picnic_params_t.Picnic3_L1.value or parameters == picnic_params_t.Picnic3_L3.value or parameters == picnic_params_t.Picnic3_L5.value:
         u = paramset.numOpenedRounds
         T = paramset.numMPCRounds
         numTreeValues = u * ceil_log2((T + (u - 1)) / u)
@@ -366,9 +352,9 @@ def picnic_signature_size(parameters):
         signatureSize = paramset.saltSizeBytes + paramset.digestSizeBytes + numTreeValues * paramset.seedSizeBytes + numTreeValues * paramset.digestSizeBytes + proofSize * u
         return signatureSize
     
-    if paramset.transform == transform_t.TRANSFORM_FS:
+    if paramset.transform == transform_t.TRANSFORM_FS.value:
         return paramset.numMPCRounds * (paramset.digestSizeBytes + paramset.stateSizeBytes + numBytes(3 * paramset.numSboxes * paramset.numRounds) +  2 * paramset.seedSizeBytes) + numBytes(2 * paramset.numMPCRounds) + paramset.saltSizeBytes
-    elif paramset.transform == transform_t.TRANSFORM_UR:
+    elif paramset.transform == transform_t.TRANSFORM_UR.value:
         return paramset.numMPCRounds * (paramset.digestSizeBytes + paramset.stateSizeBytes + 2 * numBytes(3 * paramset.numSboxes * paramset.numRounds) +  3 * paramset.seedSizeBytes) + numBytes(2 * paramset.numMPCRounds) + paramset.saltSizeBytes
     else:
         return PICNIC_MAX_SIGNATURE_SIZE

@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import List
+import os
+import sys
+import numpy as np
 
 from constants.lowmc_constants import LOWMC_MAX_WORDS, WORD_SIZE_BITS, KMatrix, LMatrix, RConstant
 from hash import HashInit, HASH_PREFIX_2, HashUpdate, HashFinal, HashSqueeze, HASH_PREFIX_NONE, HashUpdateIntLE, \
@@ -8,47 +11,48 @@ from hash import HashInit, HASH_PREFIX_2, HashUpdate, HashFinal, HashSqueeze, HA
 from picnic_types import view_t, commitments_t, g_commitments_t, seeds_t, randomTape_t, allocateRandomTape, \
     allocateView, allocateViews, allocateCommitments, allocateGCommitments, allocateSeeds
 
+from classes import *
 
-class transform_t(Enum):
-    TRANSFORM_FS = 0,
-    TRANSFORM_UR = 1,
-    TRANSFORM_INVALID = 255
-
-
-@dataclass
-class paramset_t:
-    numRounds: int
-    numSboxes: int
-    stateSizeBits: int
-    stateSizeBytes: int
-    stateSizeWords: int
-    andSizeBytes: int
-    UnruhGWithoutInputBytes: int
-    UnruhGWithInputBytes: int
-    numMPCRounds: int  # T
-    numOpenedRounds: int  # u
-    numMPCParties: int  # N
-    seedSizeBytes: int
-    saltSizeBytes: int
-    digestSizeBytes: int
-    transform: transform_t
+# class transform_t(Enum):
+#     TRANSFORM_FS = 0,
+#     TRANSFORM_UR = 1,
+#     TRANSFORM_INVALID = 255
 
 
-@dataclass
-class proof_t:
-    seed1: List[int]
-    seed2: List[int]
-    inputShare: List[int]  # Input share of the party which does not derive it from the seed (not included if challenge is 0)
-    communicatedBits: List[int]
-    view3Commitment: List[int]
-    view3UnruhG: List[int]  # we include the max length, but we will only serialize the bytes we use
+# @dataclass
+# class paramset_t:
+#     numRounds: int
+#     numSboxes: int
+#     stateSizeBits: int
+#     stateSizeBytes: int
+#     stateSizeWords: int
+#     andSizeBytes: int
+#     UnruhGWithoutInputBytes: int
+#     UnruhGWithInputBytes: int
+#     numMPCRounds: int  # T
+#     numOpenedRounds: int  # u
+#     numMPCParties: int  # N
+#     seedSizeBytes: int
+#     saltSizeBytes: int
+#     digestSizeBytes: int
+#     transform: transform_t
 
 
-@dataclass
-class signature_t:
-    proofs: List[proof_t]
-    challengeBits: List[int]  # has length numBytes(numMPCRounds*2)
-    salt: List[int]  # has length saltSizeBytes
+# @dataclass
+# class proof_t:
+#     seed1: List[int]
+#     seed2: List[int]
+#     inputShare: List[int]  # Input share of the party which does not derive it from the seed (not included if challenge is 0)
+#     communicatedBits: List[int]
+#     view3Commitment: List[int]
+#     view3UnruhG: List[int]  # we include the max length, but we will only serialize the bytes we use
+
+
+# @dataclass
+# class signature_t:
+#     proofs: List[proof_t]
+#     challengeBits: List[int]  # has length numBytes(numMPCRounds*2)
+#     salt: List[int]  # has length saltSizeBytes
 
 
 VIEW_OUTPUTS = lambda i, j, viewOutputs: viewOutputs[i * 3 + j]
@@ -66,6 +70,7 @@ def getBitFromWordArray(array: List[int], bitNumber: int) -> int:
 
 
 def setBit(bytes: List[int], bitNumber: int, val: int) -> None:
+    print(f'Bytes: {bytes}, bitnumber {bitNumber}')
     bytes[bitNumber // 8] = (bytes[bitNumber >> 3] & ~(1 << (7 - (bitNumber % 8)))) | (val << (7 - (bitNumber % 8)))
 
 
@@ -93,8 +98,8 @@ def partity(data: List[int], len: int) -> int:
     return y & 1
 
 
-def numBytes(numBits: int) -> int:
-    return 0 if numBits == 0 else ((numBits - 1) // 8 + 1)
+# def numBytes(numBits: int) -> int:
+#     return 0 if numBits == 0 else ((numBits - 1) // 8 + 1)
 
 
 def xor_array(out: List[int], in1: List[int], in2: List[int], length: int) -> None:
@@ -120,21 +125,40 @@ def parity32(x: int) -> int:
     return y & 1
 
 
-def matrix_mul(output: List[int], state: List[int], matrix: List[int], params: paramset_t) -> None:
+# def matrix_mul(output: List[int], state: List[int], matrix: List[int], params: paramset_t) -> None:
+#     # Use temp to correctly handle the case when state = output
+#     temp = [0 for _ in range(LOWMC_MAX_WORDS)]
+#     wholeWords = params.stateSizeBits // WORD_SIZE_BITS
+#     for i in range(params.stateSizeBits):
+#         prod = 0
+#         for j in range(wholeWords):
+#             index = i * params.stateSizeWords + j
+#             prod ^= (state[j] & matrix[index])
+#         for j in range(wholeWords * WORD_SIZE_BITS, params.stateSizeBits):
+#             index = i * params.stateSizeWords * WORD_SIZE_BITS + j
+#             bit = getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index)
+#             prod ^= bit
+#         setBit(temp, i, parity32(prod))
+#     output[:] = temp[:]  # memcpy((uint8_t*)output, (uint8_t*)temp, params->stateSizeWords * sizeof(uint32_t));
+
+def matrix_mul(output, state, matrix, params):
     # Use temp to correctly handle the case when state = output
-    temp = [0 for _ in range(LOWMC_MAX_WORDS)]
-    wholeWords = params.stateSizeBits // WORD_SIZE_BITS
+    temp = np.zeros(params.stateSizeWords, dtype=np.uint32)
+
+    whole_words = params.stateSizeBits // 32
     for i in range(params.stateSizeBits):
         prod = 0
-        for j in range(wholeWords):
+        for j in range(whole_words):
             index = i * params.stateSizeWords + j
             prod ^= (state[j] & matrix[index])
-        for j in range(wholeWords * WORD_SIZE_BITS, params.stateSizeBits):
-            index = i * params.stateSizeWords * WORD_SIZE_BITS + j
-            bit = getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index)
+        for j in range(whole_words * 32, params.stateSizeBits):
+            index = i * params.stateSizeWords * 32 + j
+            bit = (getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index))
             prod ^= bit
+
         setBit(temp, i, parity32(prod))
-    output[:] = temp[:]  # memcpy((uint8_t*)output, (uint8_t*)temp, params->stateSizeWords * sizeof(uint32_t));
+    
+    np.copyto(output, temp)
 
 
 def substitution(state: List[int], params: paramset_t) -> None:
@@ -610,50 +634,61 @@ def mpc_LowMC(tapes: randomTape_t, views: List[view_t], plaintext: List[int],
         views[i].outputShare[:] = state[i][:params.stateSizeBytes]
 
 
-# #ifdef PICNIC_BUILD_DEFAULT_RNG
-# int random_bytes_default(uint8_t* buf, size_t len)
-# {
-#
-# #if defined(__LINUX__)
-#     FILE* urandom = fopen("/dev/urandom", "r");
-#     if (urandom == NULL) {
-#         return -1;
-#     }
-#
-#     if (fread(buf, sizeof(uint8_t), len, urandom) != len) {
-#         return -2;
-#     }
-#     fclose(urandom);
-#
-#     return 0;
-#
-# #elif defined(__WINDOWS__)
-# #ifndef ULONG_MAX
-# #define ULONG_MAX 0xFFFFFFFFULL
-# #endif
-#     if (len > ULONG_MAX) {
-#         return -3;
-#     }
-#
-#     if (!BCRYPT_SUCCESS(BCryptGenRandom(NULL, buf, (ULONG)len, BCRYPT_USE_SYSTEM_PREFERRED_RNG))) {
-#         return -4;
-#     }
-#     return 0;
-# #else
-#     #error "If neither __LINUX__ or __WINDOWS__ are defined, you'll have to implement the random number generator"
-# #endif
-#
-# }
-# #endif /* PICNIC_BUILD_DEFAULT_RNG */
-#
-# #ifdef SUPERCOP
-# #include "randombytes.h"
-# int random_bytes_supercop(uint8_t* buf, size_t len)
-# {
-#     randombytes(buf, len); /* returns void */
-#     return 0;
-# }
-# #endif /* SUPERCOP */
+# #-----------------------------------------
+# def randombytes(size):
+#     return os.urandom(size)
+
+# PICNIC_BUILD_DEFAULT_RNG = True
+# SUPERCOP = False
+
+# def random_bytes_default(buf=None, length=32):
+#     print(sys.platform)
+#     if sys.platform.startswith('linux'):
+#         try:
+#             with open('/dev/urandom', 'rb') as f:
+#                 buf[:] = f.read(length)
+#             return 0
+#         except:
+#             return -1
+#     elif sys.platform.startswith('win'):
+#         print('windows')
+#         try:
+#             import ctypes
+#             from ctypes import wintypes
+
+#             BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002
+#             bcrypt = ctypes.WinDLL('bcrypt.dll')
+
+#             NTSTATUS = wintypes.LONG
+#             PUCHAR = ctypes.POINTER(wintypes.UCHAR)
+#             ULONG = wintypes.ULONG
+
+#             bcrypt.BCryptGenRandom.restype = NTSTATUS
+#             bcrypt.BCryptGenRandom.argtypes = [wintypes.LPVOID, PUCHAR, ULONG, ULONG]
+
+#             status = bcrypt.BCryptGenRandom(None, buf, length, BCRYPT_USE_SYSTEM_PREFERRED_RNG)
+#             if status == 0:
+#                 return 0
+#             else:
+#                 return -4
+#         except:
+#             return -1
+#     else:
+#         raise NotImplementedError("If neither __LINUX__ or __WINDOWS__ are defined, you'll have to implement the random number generator")
+
+# if PICNIC_BUILD_DEFAULT_RNG:
+#     def get_random_bytes(length):
+#         buf = bytearray(length)
+#         ret = random_bytes_default(buf, length)
+#         if ret != 0:
+#             raise ValueError(f"Error generating random bytes: {ret}")
+#         return buf
+
+# if SUPERCOP:
+#     def random_bytes_supercop(buf, length):
+#         randombytes(buf, length)
+#         return 0
+# #-----------------------------------------
 
 
 def computeSeeds(privateKey: List[int], publicKey: List[int], plaintext: List[int],

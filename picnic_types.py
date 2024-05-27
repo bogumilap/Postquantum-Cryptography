@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import List
 
 # from picnic_impl import paramset_t, numBytes, transform_t, proof_t, signature_t
-from picnic_impl import *
-from picnic3_impl import *
+#from picnic_impl import *
+#from picnic3_impl import *
 
+from classes import *
 
 @dataclass
 class randomTape_t:
