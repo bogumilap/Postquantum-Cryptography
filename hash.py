@@ -1,7 +1,6 @@
 import sys
 from hashlib import shake_128, shake_256
 import hashlib
-from typing import List
 
 from classes import *
 
@@ -22,7 +21,9 @@ class HashInstance:
 
 
 
-def HashUpdate(ctx, data: List[int] | int, byteLen: int) -> None:
+def HashUpdate(ctx, data: List[int] | bytearray, byteLen: int) -> None:
+    if isinstance(data, List):
+        data = bytearray(data)
     ctx.update(data)  # Keccak_HashUpdate(ctx, data, byteLen * 8)
 
 
@@ -34,13 +35,13 @@ def HashInit(ctx, params: paramset_t, hashPrefix: int):
         ctx = shake_256()
 
     if hashPrefix != HASH_PREFIX_NONE:
-        HashUpdate(ctx, hashPrefix, 1)
+        HashUpdate(ctx, bytearray(hashPrefix), 1)
 
     return ctx
 
 
 def HashFinal(ctx) -> None:
-    ctx.digest()  # Keccak_HashFinal(ctx, NULL)
+    ctx.digest(ctx.digest_size)  # Keccak_HashFinal(ctx, NULL)
 
 
 def HashSqueeze(ctx, digest: List[int], byteLen: int) -> None:
@@ -48,18 +49,18 @@ def HashSqueeze(ctx, digest: List[int], byteLen: int) -> None:
     pass  # Keccak_HashSqueeze(ctx, digest, byteLen * 8)
 
 
-def toLittleEndian(x: int) -> int:
+def toLittleEndian(x: int) -> bytearray:
     if sys.byteorder == "big":
-        return (x << 8) | (x >> 8)
+        return bytearray((x << 8) | (x >> 8))
     else:
-        return x
+        return bytearray(x)
 
 
-def fromLittleEndian(x: int) -> int:
+def fromLittleEndian(x: int) -> bytearray:
     if sys.byteorder == "big":
-        return (x << 8) | (x >> 8)
+        return bytearray((x << 8) | (x >> 8))
     else:
-        return x
+        return bytearray(x)
 
 
 def HashUpdateIntLE(ctx, x: int) -> None:
