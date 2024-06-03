@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 from typing import List
 
-# from picnic_impl import paramset_t, numBytes, transform_t, proof_t, signature_t
-
-#from picnic3_impl import *
 
 from classes import *
 
@@ -163,7 +160,7 @@ def allocateSeeds(params: paramset_t) -> List[seeds_t]:
     # seeds[params.numMPCRounds].seed = None
     seeds.append(seeds_t(seed=None, iSeed=None))
 
-    print(f"Len of seed list: {len(seeds)}, params.numMPCRounds: {params.numMPCRounds}")
+
     if params.numMPCParties == 3:
         seeds[params.numMPCRounds].iSeed = slab1  # For ZKB parameter sets, the salt must be derived with the seeds
     else:

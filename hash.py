@@ -3,8 +3,6 @@ from hashlib import shake_128, shake_256
 import hashlib
 from typing import List
 
-# from picnic_impl import paramset_t
-
 from classes import *
 
 

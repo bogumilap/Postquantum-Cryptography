@@ -13,46 +13,6 @@ from picnic_types import view_t, commitments_t, g_commitments_t, seeds_t, random
 
 from classes import *
 
-# class transform_t(Enum):
-#     TRANSFORM_FS = 0,
-#     TRANSFORM_UR = 1,
-#     TRANSFORM_INVALID = 255
-
-
-# @dataclass
-# class paramset_t:
-#     numRounds: int
-#     numSboxes: int
-#     stateSizeBits: int
-#     stateSizeBytes: int
-#     stateSizeWords: int
-#     andSizeBytes: int
-#     UnruhGWithoutInputBytes: int
-#     UnruhGWithInputBytes: int
-#     numMPCRounds: int  # T
-#     numOpenedRounds: int  # u
-#     numMPCParties: int  # N
-#     seedSizeBytes: int
-#     saltSizeBytes: int
-#     digestSizeBytes: int
-#     transform: transform_t
-
-
-# @dataclass
-# class proof_t:
-#     seed1: List[int]
-#     seed2: List[int]
-#     inputShare: List[int]  # Input share of the party which does not derive it from the seed (not included if challenge is 0)
-#     communicatedBits: List[int]
-#     view3Commitment: List[int]
-#     view3UnruhG: List[int]  # we include the max length, but we will only serialize the bytes we use
-
-
-# @dataclass
-# class signature_t:
-#     proofs: List[proof_t]
-#     challengeBits: List[int]  # has length numBytes(numMPCRounds*2)
-#     salt: List[int]  # has length saltSizeBytes
 
 
 VIEW_OUTPUTS = lambda i, j, viewOutputs: viewOutputs[i * 3 + j]
@@ -70,7 +30,6 @@ def getBitFromWordArray(array: List[int], bitNumber: int) -> int:
 
 
 def setBit(bytes: List[int], bitNumber: int, val: int) -> None:
-    print(f'Bytes: {bytes}, bitnumber {bitNumber}, val: {val}')
     bytes[bitNumber // 8] = (bytes[bitNumber >> 3] & ~(1 << (7 - (bitNumber % 8)))) | (val << (7 - (bitNumber % 8)))
 
 
@@ -97,10 +56,6 @@ def partity(data: List[int], len: int) -> int:
     y ^= (y >> 8)
     y ^= (y >> 16)
     return y & 1
-
-
-# def numBytes(numBits: int) -> int:
-#     return 0 if numBits == 0 else ((numBits - 1) // 8 + 1)
 
 
 def xor_array(out: List[int], in1: List[int], in2: List[int], length: int) -> None:
@@ -620,62 +575,6 @@ def mpc_LowMC(tapes: randomTape_t, views: List[view_t], plaintext: List[int],
     for i in range(3):
         views[i].outputShare[:] = state[i][:params.stateSizeBytes]
 
-
-# #-----------------------------------------
-# def randombytes(size):
-#     return os.urandom(size)
-
-# PICNIC_BUILD_DEFAULT_RNG = True
-# SUPERCOP = False
-
-# def random_bytes_default(buf=None, length=32):
-#     print(sys.platform)
-#     if sys.platform.startswith('linux'):
-#         try:
-#             with open('/dev/urandom', 'rb') as f:
-#                 buf[:] = f.read(length)
-#             return 0
-#         except:
-#             return -1
-#     elif sys.platform.startswith('win'):
-#         print('windows')
-#         try:
-#             import ctypes
-#             from ctypes import wintypes
-
-#             BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002
-#             bcrypt = ctypes.WinDLL('bcrypt.dll')
-
-#             NTSTATUS = wintypes.LONG
-#             PUCHAR = ctypes.POINTER(wintypes.UCHAR)
-#             ULONG = wintypes.ULONG
-
-#             bcrypt.BCryptGenRandom.restype = NTSTATUS
-#             bcrypt.BCryptGenRandom.argtypes = [wintypes.LPVOID, PUCHAR, ULONG, ULONG]
-
-#             status = bcrypt.BCryptGenRandom(None, buf, length, BCRYPT_USE_SYSTEM_PREFERRED_RNG)
-#             if status == 0:
-#                 return 0
-#             else:
-#                 return -4
-#         except:
-#             return -1
-#     else:
-#         raise NotImplementedError("If neither __LINUX__ or __WINDOWS__ are defined, you'll have to implement the random number generator")
-
-# if PICNIC_BUILD_DEFAULT_RNG:
-#     def get_random_bytes(length):
-#         buf = bytearray(length)
-#         ret = random_bytes_default(buf, length)
-#         if ret != 0:
-#             raise ValueError(f"Error generating random bytes: {ret}")
-#         return buf
-
-# if SUPERCOP:
-#     def random_bytes_supercop(buf, length):
-#         randombytes(buf, length)
-#         return 0
-# #-----------------------------------------
 
 
 def computeSeeds(privateKey: List[int], publicKey: List[int], plaintext: List[int],

@@ -61,7 +61,6 @@ def LMatrixInv(round: int, params: paramset_t) -> Optional[List[int]]:
 
 def KMatrix(round: int, params: paramset_t) -> Optional[List[int]]:
     """Return the LowMC key matrix for this round"""
-    print('statesizebitst: ', GET_MAT(KMatrix_L1, round))
     if params.stateSizeBits == 128:
         return GET_MAT(KMatrix_L1, round)
     elif params.stateSizeBits == 129:
