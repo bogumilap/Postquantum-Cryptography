@@ -13,26 +13,26 @@ import tree
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
-class proof2_t:
-    def __init__(self, seedInfo, seedInfoLen, aux, C, input, msgs):
-        self.seedInfo = seedInfo         # Information required to compute the tree with seeds of of all opened parties
-        self.seedInfoLen = seedInfoLen   # Length of seedInfo buffer
-        self.aux = aux                   # Last party's correction bits; NULL if P[t] == N-1
-        self.C = C                       # Commitment to preprocessing step of unopened party
-        self.input = input               # Masked input used in online execution
-        self.msgs = msgs                 # Broadcast messages of unopened party P[t]
+# class proof2_t:
+#     def __init__(self, seedInfo, seedInfoLen, aux, C, input, msgs):
+#         self.seedInfo = seedInfo         # Information required to compute the tree with seeds of of all opened parties
+#         self.seedInfoLen = seedInfoLen   # Length of seedInfo buffer
+#         self.aux = aux                   # Last party's correction bits; NULL if P[t] == N-1
+#         self.C = C                       # Commitment to preprocessing step of unopened party
+#         self.input = input               # Masked input used in online execution
+#         self.msgs = msgs                 # Broadcast messages of unopened party P[t]
 
-class signature2_t:
-    def __init__(self, salt, iSeedInfo, iSeedInfoLen, cvInfo, cvInfoLen, challengeHash, challengeC, challengeP, proofs):
-        self.salt = salt
-        self.iSeedInfo = iSeedInfo       # Info required to recompute the tree of all initial seeds
-        self.iSeedInfoLen = iSeedInfoLen
-        self.cvInfo = cvInfo             # Info required to check commitments to views (reconstruct Merkle tree)
-        self.cvInfoLen = cvInfoLen
-        self.challengeHash = challengeHash
-        self.challengeC = challengeC
-        self.challengeP = challengeP
-        self.proofs = proofs             # One proof for each online execution the verifier checks
+# class signature2_t:
+#     def __init__(self, salt, iSeedInfo, iSeedInfoLen, cvInfo, cvInfoLen, challengeHash, challengeC, challengeP, proofs):
+#         self.salt = salt
+#         self.iSeedInfo = iSeedInfo       # Info required to recompute the tree of all initial seeds
+#         self.iSeedInfoLen = iSeedInfoLen
+#         self.cvInfo = cvInfo             # Info required to check commitments to views (reconstruct Merkle tree)
+#         self.cvInfoLen = cvInfoLen
+#         self.challengeHash = challengeHash
+#         self.challengeC = challengeC
+#         self.challengeP = challengeP
+#         self.proofs = proofs             # One proof for each online execution the verifier checks
 
 def printHex(s, data):
     print(f"{s}: ", end="")

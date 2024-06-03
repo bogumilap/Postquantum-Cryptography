@@ -10,7 +10,10 @@ from constants.lowmc_constants_L3 import LMatrix_L3, LMatrix_L3_full, LMatrix_L3
 from constants.lowmc_constants_L5 import LMatrix_L5, LMatrix_L5_full, LMatrix_L5_inv, \
     KMatrix_L5, KMatrix_L5_full, KMatrix_L5_inv, \
     RConstants_L5, RConstants_L5_full
-from picnic_impl import paramset_t
+# from picnic_impl import paramset_t
+
+from classes import *
+from constants.matrices_t import * 
 
 
 WORD_SIZE_BITS = 32  # the word size for the implementation. Not a LowMC parameter
@@ -22,7 +25,7 @@ LOWMC_MAX_AND_GATES = 3 * 38 * 10 + 4  # Rounded to nearest byte
 ROW_SIZE = lambda m: m.columns
 MAT_SIZE = lambda m: m.rows * ROW_SIZE(m)
 
-GET_MAT = lambda m, r: m.data[r * MAT_SIZE(m)]
+GET_MAT = lambda m, r: m.data[r * MAT_SIZE(m):(r+1) * MAT_SIZE(m)]
 
 
 def LMatrix(round: int, params: paramset_t) -> Optional[List[int]]:
