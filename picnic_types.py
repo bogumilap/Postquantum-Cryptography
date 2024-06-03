@@ -84,7 +84,7 @@ def allocateRandomTape(params: paramset_t) -> randomTape_t:
     slab = [0 for _ in range(tape.nTapes * tapeSizeBytes)]
     slab_start_index = 0
     for i in range(tape.nTapes):
-        tape.tape[i] = slab[slab_start_index:]
+        tape.tape[i] = slab[slab_start_index:slab_start_index + tapeSizeBytes]
         slab_start_index += tapeSizeBytes
     return tape
 
