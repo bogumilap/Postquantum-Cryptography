@@ -70,8 +70,9 @@ def getBitFromWordArray(array: List[int], bitNumber: int) -> int:
 
 
 def setBit(bytes: List[int], bitNumber: int, val: int) -> None:
-    print(f'Bytes: {bytes}, bitnumber {bitNumber}')
+    print(f'Bytes: {bytes}, bitnumber {bitNumber}, val: {val}')
     bytes[bitNumber // 8] = (bytes[bitNumber >> 3] & ~(1 << (7 - (bitNumber % 8)))) | (val << (7 - (bitNumber % 8)))
+
 
 
 def setBitInWordArray(array: List[int], bitNumber: int, val: int) -> None:
@@ -125,40 +126,26 @@ def parity32(x: int) -> int:
     return y & 1
 
 
-# def matrix_mul(output: List[int], state: List[int], matrix: List[int], params: paramset_t) -> None:
-#     # Use temp to correctly handle the case when state = output
-#     temp = [0 for _ in range(LOWMC_MAX_WORDS)]
-#     wholeWords = params.stateSizeBits // WORD_SIZE_BITS
-#     for i in range(params.stateSizeBits):
-#         prod = 0
-#         for j in range(wholeWords):
-#             index = i * params.stateSizeWords + j
-#             prod ^= (state[j] & matrix[index])
-#         for j in range(wholeWords * WORD_SIZE_BITS, params.stateSizeBits):
-#             index = i * params.stateSizeWords * WORD_SIZE_BITS + j
-#             bit = getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index)
-#             prod ^= bit
-#         setBit(temp, i, parity32(prod))
-#     output[:] = temp[:]  # memcpy((uint8_t*)output, (uint8_t*)temp, params->stateSizeWords * sizeof(uint32_t));
-
 def matrix_mul(output, state, matrix, params):
     # Use temp to correctly handle the case when state = output
-    temp = np.zeros(params.stateSizeWords, dtype=np.uint32)
+    temp = [0] * LOWMC_MAX_WORDS
+    temp[params.stateSizeWords - 1] = 0
 
-    whole_words = params.stateSizeBits // 32
+    wholeWords = params.stateSizeBits // WORD_SIZE_BITS
     for i in range(params.stateSizeBits):
         prod = 0
-        for j in range(whole_words):
+        for j in range(wholeWords):
             index = i * params.stateSizeWords + j
             prod ^= (state[j] & matrix[index])
-        for j in range(whole_words * 32, params.stateSizeBits):
-            index = i * params.stateSizeWords * 32 + j
+        
+        for j in range(wholeWords * WORD_SIZE_BITS, params.stateSizeBits):
+            index = i * params.stateSizeWords * WORD_SIZE_BITS + j
             bit = (getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index))
             prod ^= bit
 
         setBit(temp, i, parity32(prod))
-    
-    np.copyto(output, temp)
+
+    output[:] = temp[:params.stateSizeWords]
 
 
 def substitution(state: List[int], params: paramset_t) -> None:

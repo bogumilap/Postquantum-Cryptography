@@ -296,8 +296,8 @@ def picnic_sign(sk, message, message_len, signature, signature_len):
         return -1
     
     if not is_picnic3(sk.params):
-        sig = signature_t()
-        allocateSignature(sig, paramset)
+        #sig = signature_t()
+        sig = allocateSignature(paramset)
         if sig is None:
             return -1
         

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 # from picnic_impl import paramset_t, numBytes, transform_t, proof_t, signature_t
-#from picnic_impl import *
+
 #from picnic3_impl import *
 
 from classes import *
@@ -135,8 +135,9 @@ def allocateSignature2(params: paramset_t) -> signature2_t:
     # Individual proofs are allocated during signature generation, only for rounds when neeeded
     return signature
 
-
+import numpy as np
 def allocateSeeds(params: paramset_t) -> List[seeds_t]:
+    #seeds = np.zeros(params.numMPCRounds + 1, dtype=np.uint32)
     seeds = []
     nSeeds = params.numMPCParties
     slab1 = [0 for _ in range(params.numMPCRounds * nSeeds * params.seedSizeBytes + params.saltSizeBytes)]  # Seeds
@@ -159,7 +160,10 @@ def allocateSeeds(params: paramset_t) -> List[seeds_t]:
 
     # The salt is the last seed value
     # Accessed by seeds[params->numMPCRounds].iSeed
-    seeds[params.numMPCRounds].seed = None
+    # seeds[params.numMPCRounds].seed = None
+    seeds.append(seeds_t(seed=None, iSeed=None))
+
+    print(f"Len of seed list: {len(seeds)}, params.numMPCRounds: {params.numMPCRounds}")
     if params.numMPCParties == 3:
         seeds[params.numMPCRounds].iSeed = slab1  # For ZKB parameter sets, the salt must be derived with the seeds
     else:

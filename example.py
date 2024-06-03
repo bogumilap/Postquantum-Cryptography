@@ -4,6 +4,7 @@
 import os
 import sys
 from picnic import *
+import ctypes
 
 MSG_LEN = 500
 
@@ -34,7 +35,7 @@ def picnicExample(parameters):
     print(f"Signing a {MSG_LEN} byte message... ", end="")
     sys.stdout.flush()
 
-    ret = picnic_sign(sk, message, len(message), signature, ctypes.byref(ctypes.c_size_t(signature_len)))
+    ret = picnic_sign(sk, message, len(message), signature, signature_len)
     if ret != 0:
         print("picnic_sign failed")
         sys.exit(-1)

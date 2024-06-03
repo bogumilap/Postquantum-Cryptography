@@ -40,9 +40,9 @@ class proof_t:
 
 @dataclass
 class signature_t:
-    proofs: List[proof_t]
-    challengeBits: List[int]  # has length numBytes(numMPCRounds*2)
-    salt: List[int]  # has length saltSizeBytes
+    proofs: List[proof_t] = None
+    challengeBits: List[int]  = None# has length numBytes(numMPCRounds*2)
+    salt: List[int] = None # has length saltSizeBytes
 
 
 class proof2_t:
