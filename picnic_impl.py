@@ -22,16 +22,20 @@ VIEW_OUTPUTS = lambda i, j, viewOutputs: viewOutputs[i * 3 + j]
 
 
 def getBit(array: List[int], bitNumber: int) -> int:
-    return (array[bitNumber // 8] >> (7 - (bitNumber % 8))) & 0x01
+    return ((array[bitNumber // 8] >> (7 - (bitNumber % 8))) & 0x01) % 255
 
 
 def getBitFromWordArray(array: List[int], bitNumber: int) -> int:
-    return getBit(array, bitNumber)
+    return getBit(array, bitNumber) % 255
 
 
 def setBit(bytes: List[int], bitNumber: int, val: int) -> None:
+    # rewrite as uint8
+    for i in range(len(bytes)):
+        bytes[i] = bytes[i] % 255
+    val = val % 255
     bytes[bitNumber // 8] = (bytes[bitNumber >> 3] & ~(1 << (7 - (bitNumber % 8)))) | (val << (7 - (bitNumber % 8)))
-
+    bytes[bitNumber // 8] = bytes[bitNumber // 8] % 255
 
 
 def setBitInWordArray(array: List[int], bitNumber: int, val: int) -> None:
@@ -69,7 +73,8 @@ def xor_three(output: List[int], in1: List[int], in2: List[int], in3: List[int],
     for i in range(wholeWords):
         output[i] = in1[i] ^ in2[i] ^ in3[i]
     for i in range(wholeWords * 4, lenBytes):
-        out[i] = in1[i] ^ in2[i] ^ in3[i]
+        out[i] = (in1[i] % 255) ^ (in2[i] % 255) ^ (in3[i] % 255)
+        out[i] = out[i] % 255
 
 
 def parity32(x: int) -> int:
@@ -78,7 +83,7 @@ def parity32(x: int) -> int:
     y ^= (y >> 4)
     y ^= (y >> 8)
     y ^= (y >> 16)
-    return y & 1
+    return (y & 1) % 255
 
 
 def matrix_mul(output, state, matrix, params):
@@ -95,12 +100,12 @@ def matrix_mul(output, state, matrix, params):
         
         for j in range(wholeWords * WORD_SIZE_BITS, params.stateSizeBits):
             index = i * params.stateSizeWords * WORD_SIZE_BITS + j
-            bit = (getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index))
+            bit = ((getBitFromWordArray(state, j) & getBitFromWordArray(matrix, index))) % 255
             prod ^= bit
 
         setBit(temp, i, parity32(prod))
 
-    output[:] = temp[:params.stateSizeWords]
+    output[:] = temp[:params.stateSizeWords * 4]
 
 
 def substitution(state: List[int], params: paramset_t) -> None:
@@ -146,14 +151,17 @@ def createRandomTape(seed: List[int], salt: List[int], roundNumber: int, playerN
     HashSqueeze(ctx, tape, params.digestSizeBytes)
 
     # Expand the hashed seed, salt, round and player indices, and output length to create the tape.
-    HashInit(ctx, params, HASH_PREFIX_NONE)  # todo: HashInit zwraca nowy ctx - nie będzie zawierał poprzedniego
+    ctx1 = HashInit(ctx, params, HASH_PREFIX_NONE)  # todo: HashInit zwraca nowy ctx - nie będzie zawierał poprzedniego
+    HashUpdate(ctx, ctx1.digest(ctx1.digest_size), ctx1.digest_size)  # todo: ???
     HashUpdate(ctx, tape, params.digestSizeBytes)  # Hash the hashed seed
     HashUpdate(ctx, salt, params.saltSizeBytes)
     HashUpdateIntLE(ctx, roundNumber)
     HashUpdateIntLE(ctx, playerNumber)
     HashUpdateIntLE(ctx, tapeLengthBytes)
     HashFinal(ctx)
-    HashSqueeze(ctx, tape, tapeLengthBytes)
+    ctx.update(bytearray(tape))  # todo zamiast update i digest powinno być HashSqueeze
+    ctx.digest(tapeLengthBytes)
+    # HashSqueeze(ctx, tape, tapeLengthBytes)
 
     return True
 
@@ -511,10 +519,11 @@ def verify(sig: signature_t, pubKey: List[int], plaintext: List[int], message: L
 # Functions implementing Sign
 
 def mpc_AND(in1: List[int], in2: List[int], out: List[int], rand: randomTape_t, views: List[view_t]) -> None:
-    r = [getBit(rand.tape[0], rand.pos), getBit(rand.tape[1], rand.pos), getBit(rand.tape[2], rand.pos)]
+    r = [getBit(rand.tape[0], rand.pos) % 255, getBit(rand.tape[1], rand.pos) % 255, getBit(rand.tape[2], rand.pos) % 255]
 
     for i in range(3):
         out[i] = (in1[i] & in2[(i + 1) % 3]) ^ (in1[(i + 1) % 3] & in2[i]) ^ (in1[i] & in2[i]) ^ r[i] ^ r[(i + 1) % 3]
+        out[i] = out[i] % 255
         setBit(views[i].communicatedBits, rand.pos, out[i])
 
     rand.pos += 1
@@ -623,7 +632,7 @@ def sign_picnic1(privateKey: List[int], pubKey: List[int], plaintext: List[int],
                 return 1
             views[k][j].inputShare[:] = tmp[:params.stateSizeBytes]
             zeroTrailingBits(views[k][j].inputShare, params.stateSizeBits)
-            tape.tape[j][:] = tmp[params.stateSizeBytes:params.andSizeBytes]
+            tape.tape[j][:] = tmp[params.stateSizeBytes:params.stateSizeBytes+params.andSizeBytes]
 
         # Now set third party's wires. The random bits are from the seed, the input is
         # the XOR of other two inputs and the private key
